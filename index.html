@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SADRIS — Smart Automated Disaster Response & Intelligence System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1628;
+    --bg3: #151e35;
+    --panel: #1a2540;
+    --border: rgba(99,179,237,0.15);
+    --border2: rgba(99,179,237,0.3);
+    --text: #e8edf5;
+    --text2: #8ba3c4;
+    --text3: #4a6080;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --orange: #f97316;
+    --purple: #8b5cf6;
+    --teal: #14b8a6;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); overflow-x: hidden; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 56px 1fr; min-height: 100vh; }
+  .topbar { grid-column: 1/-1; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 10; }
+  .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 16px 0; overflow-y: auto; }
+  .main { overflow-y: auto; padding: 24px; background: var(--bg); }
+
+  /* Topbar */
+  .logo { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent2); letter-spacing: 2px; }
+  .logo span { color: var(--text3); }
+  .status-bar { display: flex; gap: 16px; margin-left: auto; align-items: center; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .status-txt { font-family: var(--mono); font-size: 10px; color: var(--text2); letter-spacing: 1px; }
+  .time-display { font-family: var(--mono); font-size: 11px; color: var(--accent2); }
+  .alert-badge { background: var(--red); color: white; font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; animation: pulse 1.5s infinite; }
+
+  /* Sidebar */
+  .nav-section { padding: 8px 16px 4px; font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--text2); border-left: 2px solid transparent; }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--bg3); color: var(--accent2); border-left-color: var(--accent); }
+  .nav-icon { font-size: 16px; width: 18px; text-align: center; }
+  .nav-badge { margin-left: auto; font-family: var(--mono); font-size: 9px; padding: 1px 6px; border-radius: 8px; }
+  .nav-badge.red { background: rgba(239,68,68,0.2); color: var(--red); }
+  .nav-badge.green { background: rgba(16,185,129,0.2); color: var(--green); }
+
+  /* Cards */
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+  .card-sm { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-family: var(--mono); font-size: 11px; color: var(--text2); letter-spacing: 1.5px; text-transform: uppercase; }
+  .card-sub { font-size: 12px; color: var(--text3); }
+
+  /* Grid layouts */
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+  /* Metric tiles */
+  .metric { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
+  .metric-label { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .metric-value { font-family: var(--mono); font-size: 22px; font-weight: 700; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .metric-delta { font-size: 11px; margin-top: 4px; }
+  .delta-up { color: var(--red); }
+  .delta-down { color: var(--green); }
+
+  /* Buttons */
+  .btn { font-family: var(--mono); font-size: 11px; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.15s; border: 1px solid; letter-spacing: 0.5px; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-outline { background: transparent; border-color: var(--border2); color: var(--text2); }
+  .btn-outline:hover { background: var(--bg3); color: var(--text); }
+  .btn-danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: var(--red); }
+  .btn-success { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: var(--green); }
+  .btn-sm { padding: 5px 10px; font-size: 10px; }
+
+  /* Badges/Tags */
+  .badge { font-family: var(--mono); font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px; }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent2); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple); border: 1px solid rgba(139,92,246,0.3); }
+  .badge-teal { background: rgba(20,184,166,0.15); color: var(--teal); border: 1px solid rgba(20,184,166,0.3); }
+
+  /* Severity bars */
+  .severity-bar { height: 4px; border-radius: 2px; background: var(--bg); overflow: hidden; }
+  .severity-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+
+  /* Tables */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 1.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .data-table tr:hover td { background: var(--bg3); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  /* Progress */
+  .progress-bar { background: var(--bg); border-radius: 2px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+  /* Alert items */
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid; }
+  .alert-item.critical { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.2); }
+  .alert-item.warning { background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.2); }
+  .alert-item.info { background: rgba(59,130,246,0.05); border-color: rgba(59,130,246,0.2); }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+  .alert-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .alert-body { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .alert-time { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { font-family: var(--mono); font-size: 11px; padding: 10px 16px; cursor: pointer; color: var(--text3); border-bottom: 2px solid transparent; margin-bottom: -1px; letter-spacing: 0.5px; transition: all 0.15s; }
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* Page title */
+  .page-title { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+
+  /* Map placeholder */
+  .map-container { background: var(--bg3); border-radius: 6px; position: relative; overflow: hidden; }
+  .map-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 30px 30px; }
+  .map-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+  /* Quantum viz */
+  .quantum-canvas { border-radius: 6px; background: var(--bg3); }
+
+  /* Inputs */
+  input, select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 8px 12px; font-family: var(--sans); font-size: 13px; outline: none; }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg3); }
+  input[type=range] { padding: 0; width: 100%; accent-color: var(--accent); }
+
+  /* Code block */
+  .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 12px; font-family: var(--mono); font-size: 11px; color: var(--teal); overflow-x: auto; }
+
+  /* Gauge */
+  .gauge-wrap { text-align: center; }
+  .gauge-value { font-family: var(--mono); font-size: 28px; font-weight: 700; }
+  .gauge-label { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+
+  /* Log stream */
+  .log-stream { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 10px; font-family: var(--mono); font-size: 10px; height: 160px; overflow-y: auto; }
+  .log-line { color: var(--text3); padding: 2px 0; }
+  .log-line span { color: var(--teal); }
+  .log-line.warn span { color: var(--yellow); }
+  .log-line.err span { color: var(--red); }
+
+  /* Section dividers */
+  .section-gap { margin-bottom: 20px; }
+
+  /* Responsive tweaks */
+  @media(max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2,1fr); }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-2-1 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">SADRIS<span> / </span>CEP</div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">FACULTY HACKATHON 2026</div>
+    <div class="status-bar">
+      <span id="alert-badge" class="alert-badge" style="display:none">0 ALERTS</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="status-dot"></div>
+        <span class="status-txt">LIVE</span>
+      </div>
+      <div class="time-display" id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-section">Monitoring</div>
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">⬡</span> Overview
+    </div>
+    <div class="nav-item" onclick="showPage('alerts')" id="nav-alerts">
+      <span class="nav-icon">◈</span> Live Alerts
+      <span class="nav-badge red" id="alert-nav-count">3</span>
+    </div>
+
+    <div class="nav-section" style="margin-top:8px">AI Engine</div>
+    <div class="nav-item" onclick="showPage('prediction')" id="nav-prediction">
+      <span class="nav-icon">⟁</span> Risk Prediction
+    </div>
+    <div class="nav-item" onclick="showPage('visualization')" id="nav-visualization">
+      <span class="nav-icon">⬡</span> Dashboard viz
+    </div>
+
+    <div class="nav-section" style="margin-top:8px">Infrastructure</div>
+    <div class="nav-item" onclick="showPage('api')" id="nav-api">
+      <span class="nav-icon">⊞</span> Backend APIs
+    </div>
+    <div class="nav-item" onclick="showPage('security')" id="nav-security">
+      <span class="nav-icon">⊡</span> Secure Layer
+    </div>
+
+    <div class="nav-section" style="margin-top:8px">Operations</div>
+    <div class="nav-item" onclick="showPage('resources')" id="nav-resources">
+      <span class="nav-icon">⬟</span> Resources
+    </div>
+    <div class="nav-item" onclick="showPage('quantum')" id="nav-quantum">
+      <span class="nav-icon">◉</span> Quantum-AI
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="main-content">
+    <!-- Pages rendered by JS -->
+  </main>
+</div>
+
+<script>
+// ==================== DATA ====================
+const RISK_ZONES = [
+  { id:'Z001', name:'Dharwad District', type:'Flood', risk:87, trend:'+4', lat:15.4, lon:75.0, pop:1800000 },
+  { id:'Z002', name:'Hassan Forest Belt', type:'Wildfire', risk:73, trend:'+12', lat:13.0, lon:76.1, pop:450000 },
+  { id:'Z003', name:'Mysuru Industrial', type:'Chemical', risk:61, trend:'-2', lat:12.3, lon:76.6, pop:920000 },
+  { id:'Z004', name:'Kodagu Slopes', type:'Landslide', risk:79, trend:'+8', lat:12.4, lon:75.7, pop:230000 },
+  { id:'Z005', name:'Bengaluru Metro', type:'Infrastructure', risk:44, trend:'+1', lat:12.97, lon:77.6, pop:12000000 },
+  { id:'Z006', name:'Belagavi Reservoir', type:'Flood', risk:55, trend:'-3', lat:15.85, lon:74.5, pop:670000 },
+];
+
+const ALERTS = [
+  { id:'ALT001', severity:'critical', type:'Flood', location:'Dharwad District', msg:'Water level at 94% capacity. Evacuation imminent for 12,000 residents.', time:'2m ago', ack:false },
+  { id:'ALT002', severity:'critical', type:'Landslide', location:'Kodagu Slopes', msg:'Soil moisture index critical. Rapid movement detected on NH-275.', time:'7m ago', ack:false },
+  { id:'ALT003', severity:'warning', type:'Wildfire', location:'Hassan Forest', msg:'Fire spread probability 73% in next 6 hours. Wind 34 km/h NE.', time:'15m ago', ack:false },
+  { id:'ALT004', severity:'info', type:'Sensor', location:'Mysuru Industrial', msg:'Pressure sensor 7B offline. Redundant system active.', time:'34m ago', ack:true },
+  { id:'ALT005', severity:'warning', type:'Infrastructure', location:'Bengaluru Metro', msg:'Bridge stress index elevated on ORR Flyover #3.', time:'1h ago', ack:true },
+];
+
+const RESOURCES = [
+  { id:'RES001', type:'Ambulance', unit:'Unit Alpha-7', location:'Dharwad', status:'deployed', eta:'8min', crew:2 },
+  { id:'RES002', type:'Fire Engine', unit:'Engine Delta-3', location:'Hassan', status:'standby', eta:'—', crew:4 },
+  { id:'RES003', type:'Rescue Team', unit:'Team Bravo-12', location:'Kodagu', status:'deployed', eta:'22min', crew:8 },
+  { id:'RES004', type:'Medical Van', unit:'MedVan Kappa-1', location:'Mysuru', status:'returning', eta:'45min', crew:3 },
+  { id:'RES005', type:'Helicopter', unit:'Heli Sierra-2', location:'Bengaluru Base', status:'ready', eta:'—', crew:3 },
+  { id:'RES006', type:'Rescue Team', unit:'Team Charlie-5', location:'Belagavi', status:'standby', eta:'—', crew:6 },
+];
+
+const API_ENDPOINTS = [
+  { method:'GET', path:'/api/v1/risk/zones', status:200, latency:12, calls:4823 },
+  { method:'POST', path:'/api/v1/predict/disaster', status:200, latency:187, calls:912 },
+  { method:'GET', path:'/api/v1/alerts/live', status:200, latency:8, calls:18420 },
+  { method:'POST', path:'/api/v1/resources/allocate', status:200, latency:94, calls:342 },
+  { method:'GET', path:'/api/v1/sensors/stream', status:200, latency:5, calls:89341 },
+  { method:'DELETE', path:'/api/v1/alerts/:id/ack', status:200, latency:18, calls:211 },
+  { method:'GET', path:'/api/v1/quantum/optimize', status:503, latency:0, calls:7 },
+];
+
+// ==================== STATE ====================
+let currentPage = 'dashboard';
+let alertCount = ALERTS.filter(a=>!a.ack).length;
+let simulationRunning = false;
+let predictionModel = { accuracy:94.2, lastTrained:'2h ago', epochs:150 };
+let logs = [];
+let logInterval = null;
+let chartInstances = {};
+
+// ==================== UTILS ====================
+function riskColor(r) {
+  if(r>=80) return 'var(--red)';
+  if(r>=60) return 'var(--orange)';
+  if(r>=40) return 'var(--yellow)';
+  return 'var(--green)';
+}
+function riskBadge(r) {
+  if(r>=80) return '<span class="badge badge-red">CRITICAL</span>';
+  if(r>=60) return '<span class="badge badge-yellow">HIGH</span>';
+  if(r>=40) return '<span class="badge badge-blue">MEDIUM</span>';
+  return '<span class="badge badge-green">LOW</span>';
+}
+function statusBadge(s) {
+  const m = { deployed:'badge-red', standby:'badge-yellow', returning:'badge-blue', ready:'badge-green' };
+  return `<span class="badge ${m[s]||'badge-blue'}">${s.toUpperCase()}</span>`;
+}
+function methodBadge(m) {
+  const c = { GET:'badge-green', POST:'badge-blue', DELETE:'badge-red', PUT:'badge-yellow', PATCH:'badge-purple' };
+  return `<span class="badge ${c[m]||'badge-blue'}">${m}</span>`;
+}
+function destroyChart(id) {
+  if(chartInstances[id]) { try { chartInstances[id].destroy(); } catch(e){} delete chartInstances[id]; }
+}
+
+// ==================== CLOCK ====================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ==================== NAV ====================
+function showPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+page);
+  if(navEl) navEl.classList.add('active');
+  Object.keys(chartInstances).forEach(destroyChart);
+  stopLogs();
+  renderPage(page);
+}
+
+function updateAlertBadge() {
+  alertCount = ALERTS.filter(a=>!a.ack).length;
+  const badge = document.getElementById('alert-badge');
+  const navCount = document.getElementById('alert-nav-count');
+  if(alertCount > 0) {
+    badge.style.display = 'inline';
+    badge.textContent = alertCount + ' ALERT' + (alertCount>1?'S':'');
+  } else { badge.style.display = 'none'; }
+  if(navCount) navCount.textContent = alertCount;
+}
+
+// ==================== PAGES ====================
+function renderPage(page) {
+  const main = document.getElementById('main-content');
+  const renders = { dashboard: renderDashboard, alerts: renderAlerts, prediction: renderPrediction, visualization: renderVisualization, api: renderAPI, security: renderSecurity, resources: renderResources, quantum: renderQuantum };
+  if(renders[page]) {
+    main.innerHTML = '';
+    renders[page](main);
+  }
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(c) {
+  c.innerHTML = `
+    <div class="page-title">System Overview</div>
+    <div class="page-sub">Real-time disaster response intelligence — Karnataka region</div>
+
+    <div class="grid-4">
+      <div class="metric">
+        <div class="metric-label">Active Zones</div>
+        <div class="metric-value" style="color:var(--red)">${RISK_ZONES.filter(z=>z.risk>=60).length}</div>
+        <div class="metric-sub">of ${RISK_ZONES.length} monitored</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Unack Alerts</div>
+        <div class="metric-value" style="color:var(--orange)">${ALERTS.filter(a=>!a.ack).length}</div>
+        <div class="metric-sub delta-up">↑ 2 new in last hour</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Resources Active</div>
+        <div class="metric-value" style="color:var(--yellow)">${RESOURCES.filter(r=>r.status==='deployed').length}</div>
+        <div class="metric-sub">of ${RESOURCES.length} units</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">AI Accuracy</div>
+        <div class="metric-value" style="color:var(--green)">${predictionModel.accuracy}%</div>
+        <div class="metric-sub delta-down">↓ 0.3% from last epoch</div>
+      </div>
+    </div>
+
+    <div class="grid-2-1">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Risk Zone Map — Karnataka</span>
+          <span class="badge badge-blue">LIVE</span>
+        </div>
+        <div class="map-container" style="height:320px" id="risk-map">
+          <div class="map-grid"></div>
+          <svg id="map-svg" style="position:absolute;inset:0;width:100%;height:100%;"></svg>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Active Alerts</span></div>
+        ${ALERTS.filter(a=>!a.ack).map(a=>`
+          <div class="alert-item ${a.severity}">
+            <div class="alert-dot" style="background:${a.severity==='critical'?'var(--red)':a.severity==='warning'?'var(--yellow)':'var(--accent)'}"></div>
+            <div style="flex:1">
+              <div class="alert-title">${a.type} — ${a.location}</div>
+              <div class="alert-body">${a.msg}</div>
+              <div class="alert-time">${a.time}</div>
+            </div>
+          </div>`).join('')}
+        <button class="btn btn-outline btn-sm" style="width:100%;margin-top:8px" onclick="showPage('alerts')">View all alerts →</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Risk Trend (24h)</span></div>
+        <div style="position:relative;height:180px">
+          <canvas id="trend-chart" role="img" aria-label="Risk trend over 24 hours for flood and wildfire events"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Disaster Type Distribution</span></div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="position:relative;height:160px;width:160px;flex-shrink:0">
+            <canvas id="dist-chart" role="img" aria-label="Distribution of disaster types across monitored zones"></canvas>
+          </div>
+          <div style="font-size:12px;line-height:2">
+            ${[{l:'Flood',c:'#3b82f6',v:33},{l:'Wildfire',c:'#f97316',v:22},{l:'Landslide',c:'#f59e0b',v:22},{l:'Chemical',c:'#8b5cf6',v:11},{l:'Infrastructure',c:'#14b8a6',v:12}].map(d=>`
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:2px;background:${d.c}"></div>
+              <span style="color:var(--text2)">${d.l}</span>
+              <span style="margin-left:auto;font-family:var(--mono);color:var(--text)">${d.v}%</span>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><span class="card-title">Zone Status Table</span>
+        <button class="btn btn-outline btn-sm" onclick="showPage('prediction')">Run New Prediction</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Zone ID</th><th>Location</th><th>Type</th><th>Risk Score</th><th>Trend</th><th>Population</th><th>Status</th></tr></thead>
+        <tbody>
+          ${RISK_ZONES.map(z=>`<tr>
+            <td><span style="font-family:var(--mono);color:var(--accent2)">${z.id}</span></td>
+            <td>${z.name}</td>
+            <td>${z.type}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:var(--mono);color:${riskColor(z.risk)};font-weight:700">${z.risk}</span>
+                <div class="severity-bar" style="width:60px"><div class="severity-fill" style="width:${z.risk}%;background:${riskColor(z.risk)}"></div></div>
+              </div>
+            </td>
+            <td style="font-family:var(--mono);color:${z.trend.startsWith('+')?'var(--red)':'var(--green)'}">${z.trend}</td>
+            <td>${(z.pop/1000000).toFixed(1)}M</td>
+            <td>${riskBadge(z.risk)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  setTimeout(()=>{
+    drawMapSVG();
+    initTrendChart();
+    initDistChart();
+  }, 50);
+}
+
+function drawMapSVG() {
+  const svg = document.getElementById('map-svg');
+  if(!svg) return;
+  const w=svg.clientWidth||600, h=svg.clientHeight||320;
+  // Karnataka bounding box approx: lat 11.5-18.5, lon 74-78.5
+  const proj = (lat,lon) => {
+    const x = ((lon-74)/(78.5-74))*w;
+    const y = h - ((lat-11.5)/(18.5-11.5))*h;
+    return [x,y];
+  };
+  let svgContent = '';
+  // Draw crosshatch grid lines
+  for(let i=0;i<10;i++) {
+    const xx = (i/9)*w;
+    const yy = (i/9)*h;
+    svgContent += `<line x1="${xx}" y1="0" x2="${xx}" y2="${h}" stroke="rgba(99,179,237,0.08)" stroke-width="1"/>`;
+    svgContent += `<line x1="0" y1="${yy}" x2="${w}" y2="${yy}" stroke="rgba(99,179,237,0.08)" stroke-width="1"/>`;
+  }
+  // Draw zones
+  RISK_ZONES.forEach(z=>{
+    const [x,y] = proj(z.lat,z.lon);
+    const r = 8 + (z.risk/100)*14;
+    const col = riskColor(z.risk);
+    svgContent += `<circle cx="${x}" cy="${y}" r="${r+4}" fill="${col}" opacity="0.1"/>`;
+    svgContent += `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.25"/>`;
+    svgContent += `<circle cx="${x}" cy="${y}" r="5" fill="${col}" opacity="0.9"/>`;
+    svgContent += `<text x="${x+10}" y="${y+4}" fill="rgba(232,237,245,0.8)" font-size="10" font-family="Space Mono,monospace">${z.name.split(' ')[0]}</text>`;
+    svgContent += `<text x="${x+10}" y="${y+15}" fill="${col}" font-size="9" font-family="Space Mono,monospace">${z.risk}%</text>`;
+  });
+  // Legend
+  svgContent += `<rect x="8" y="${h-70}" width="120" height="64" rx="4" fill="rgba(10,14,26,0.8)" stroke="rgba(99,179,237,0.2)" stroke-width="0.5"/>`;
+  [['CRITICAL ≥80','var(--red)','#ef4444'],['HIGH ≥60','var(--orange)','#f97316'],['MEDIUM ≥40','var(--yellow)','#f59e0b'],['LOW','var(--green)','#10b981']].forEach(([l,_,hex],i)=>{
+    svgContent += `<circle cx="20" cy="${h-57+i*13}" r="4" fill="${hex}" opacity="0.8"/>`;
+    svgContent += `<text x="30" y="${h-53+i*13}" fill="rgba(139,163,196,0.9)" font-size="9" font-family="Space Mono,monospace">${l}</text>`;
+  });
+  svg.innerHTML = svgContent;
+}
+
+function initTrendChart() {
+  destroyChart('trend-chart');
+  const labels = Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}:00`);
+  const flood = [42,38,41,55,63,71,75,79,82,87,84,78,72,68,74,80,85,87,83,79,76,81,85,87];
+  const fire = [30,28,32,35,40,44,48,52,55,58,61,65,68,71,73,70,67,65,69,72,70,73,71,73];
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  chartInstances['trend-chart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Flood Risk', data:flood, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.05)', tension:0.4, pointRadius:0, borderWidth:2 },
+      { label:'Wildfire Risk', data:fire, borderColor:'#f97316', backgroundColor:'rgba(249,115,22,0.05)', tension:0.4, pointRadius:0, borderWidth:2 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{
+      x:{ ticks:{ color:'#4a6080', font:{family:'Space Mono',size:9}, maxTicksLimit:8 }, grid:{color:'rgba(99,179,237,0.08)'} },
+      y:{ min:0, max:100, ticks:{ color:'#4a6080', font:{family:'Space Mono',size:9} }, grid:{color:'rgba(99,179,237,0.08)'} }
+    }}
+  });
+}
+
+function initDistChart() {
+  destroyChart('dist-chart');
+  const ctx = document.getElementById('dist-chart').getContext('2d');
+  chartInstances['dist-chart'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:['Flood','Wildfire','Landslide','Chemical','Infra'], datasets:[{ data:[33,22,22,11,12], backgroundColor:['#3b82f6','#f97316','#f59e0b','#8b5cf6','#14b8a6'], borderWidth:0, hoverOffset:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{display:false} } }
+  });
+}
+
+// ===== ALERTS =====
+function renderAlerts(c) {
+  c.innerHTML = `
+    <div class="page-title">Live Alerts</div>
+    <div class="page-sub">Real-time disaster event notifications and acknowledgement system</div>
+    <div class="grid-4" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Critical</div><div class="metric-value" style="color:var(--red)">${ALERTS.filter(a=>a.severity==='critical').length}</div></div>
+      <div class="metric"><div class="metric-label">Warning</div><div class="metric-value" style="color:var(--yellow)">${ALERTS.filter(a=>a.severity==='warning').length}</div></div>
+      <div class="metric"><div class="metric-label">Info</div><div class="metric-value" style="color:var(--accent2)">${ALERTS.filter(a=>a.severity==='info').length}</div></div>
+      <div class="metric"><div class="metric-label">Acknowledged</div><div class="metric-value" style="color:var(--green)">${ALERTS.filter(a=>a.ack).length}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Alert Stream</span>
+        <button class="btn btn-outline btn-sm" onclick="triggerNewAlert()">+ Simulate Alert</button>
+      </div>
+      <div id="alert-list">
+        ${ALERTS.map(a=>renderAlertRow(a)).join('')}
+      </div>
+    </div>`;
+}
+
+function renderAlertRow(a) {
+  return `<div class="alert-item ${a.severity}" id="alert-${a.id}" style="${a.ack?'opacity:0.5':''}">
+    <div class="alert-dot" style="background:${a.severity==='critical'?'var(--red)':a.severity==='warning'?'var(--yellow)':'var(--accent)'}"></div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span class="badge ${a.severity==='critical'?'badge-red':a.severity==='warning'?'badge-yellow':'badge-blue'}">${a.severity.toUpperCase()}</span>
+        <span class="alert-title">${a.type} — ${a.location}</span>
+        <span style="margin-left:auto" class="alert-time">${a.time}</span>
+      </div>
+      <div class="alert-body">${a.msg}</div>
+    </div>
+    ${!a.ack?`<button class="btn btn-success btn-sm" style="margin-left:8px;flex-shrink:0" onclick="ackAlert('${a.id}')">ACK</button>`:'<span style="font-family:var(--mono);font-size:10px;color:var(--green);margin-left:8px">✓ ACK</span>'}
+  </div>`;
+}
+
+function ackAlert(id) {
+  const alert = ALERTS.find(a=>a.id===id);
+  if(alert) { alert.ack = true; updateAlertBadge(); }
+  const el = document.getElementById('alert-'+id);
+  if(el) el.outerHTML = renderAlertRow(alert);
+}
+
+function triggerNewAlert() {
+  const types = ['Flood','Earthquake','Fire','Landslide','Chemical'];
+  const locs = ['Tumkur District','Chitradurga','Shivamogga','Raichur','Bidar'];
+  const msgs = ['Sensor threshold exceeded. Immediate response required.','Unusual seismic activity detected.','Smoke density critical in sector 7.','GPS displacement anomaly detected.'];
+  const newAlert = {
+    id:'ALT'+Date.now(), severity:'critical',
+    type:types[Math.floor(Math.random()*types.length)],
+    location:locs[Math.floor(Math.random()*locs.length)],
+    msg:msgs[Math.floor(Math.random()*msgs.length)],
+    time:'Just now', ack:false
+  };
+  ALERTS.unshift(newAlert);
+  updateAlertBadge();
+  const list = document.getElementById('alert-list');
+  if(list) list.innerHTML = ALERTS.map(a=>renderAlertRow(a)).join('');
+}
+
+// ===== PREDICTION =====
+function renderPrediction(c) {
+  c.innerHTML = `
+    <div class="page-title">AI Risk Prediction Engine</div>
+    <div class="page-sub">ML/DL models for disaster type detection and severity prediction</div>
+
+    <div class="grid-3 section-gap">
+      <div class="metric"><div class="metric-label">Model Accuracy</div><div class="metric-value" style="color:var(--green)">${predictionModel.accuracy}%</div><div class="metric-sub">F1: 0.931 | AUC: 0.974</div></div>
+      <div class="metric"><div class="metric-label">Last Trained</div><div class="metric-value" style="color:var(--accent2);font-size:18px">${predictionModel.lastTrained}</div><div class="metric-sub">150 epochs, batch 64</div></div>
+      <div class="metric"><div class="metric-label">Predictions/hr</div><div class="metric-value" style="color:var(--yellow)">2,847</div><div class="metric-sub">Avg latency: 187ms</div></div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Run Prediction</span></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">ZONE</div>
+            <select id="pred-zone" style="width:100%">
+              ${RISK_ZONES.map(z=>`<option value="${z.id}">${z.name}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">RAINFALL (mm)</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="range" min="0" max="300" value="120" id="rainfall-slider" oninput="document.getElementById('rainfall-val').textContent=this.value+'mm'">
+              <span id="rainfall-val" style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:50px">120mm</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">WIND SPEED (km/h)</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="range" min="0" max="100" value="35" id="wind-slider" oninput="document.getElementById('wind-val').textContent=this.value+'km/h'">
+              <span id="wind-val" style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:60px">35km/h</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">TEMPERATURE (°C)</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="range" min="10" max="50" value="28" id="temp-slider" oninput="document.getElementById('temp-val').textContent=this.value+'°C'">
+              <span id="temp-val" style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:45px">28°C</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runPrediction()" id="pred-btn">▶ RUN PREDICTION</button>
+        </div>
+      </div>
+      <div class="card" id="pred-result-card">
+        <div class="card-header"><span class="card-title">Prediction Output</span></div>
+        <div id="pred-output" style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0">
+          Configure parameters and run prediction
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><span class="card-title">Model Architecture — Multi-class Disaster Classifier</span></div>
+      <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:10px 0">
+        ${['Input Layer\n(12 features)','Dense 256\nReLU + Dropout(0.3)','Dense 128\nReLU + BatchNorm','Dense 64\nReLU','Output Layer\n(5 classes)\nSoftmax'].map((l,i,arr)=>`
+          <div style="text-align:center;flex-shrink:0">
+            <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;min-width:120px">
+              <div style="font-family:var(--mono);font-size:10px;color:var(--accent2)">${l.split('\n')[0]}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:3px">${l.split('\n').slice(1).join(' ')}</div>
+            </div>
+          </div>
+          ${i<arr.length-1?'<div style="flex-shrink:0;padding:0 6px;color:var(--text3);font-size:18px">→</div>':''}`).join('')}
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><span class="card-title">Training History</span></div>
+      <div style="position:relative;height:200px">
+        <canvas id="training-chart" role="img" aria-label="Model training history showing accuracy and loss over epochs"></canvas>
+      </div>
+    </div>`;
+  setTimeout(initTrainingChart, 50);
+}
+
+function runPrediction() {
+  const btn = document.getElementById('pred-btn');
+  btn.textContent = '⟳ Running...';
+  btn.disabled = true;
+  setTimeout(()=>{
+    const rainfall = parseInt(document.getElementById('rainfall-slider').value);
+    const wind = parseInt(document.getElementById('wind-slider').value);
+    const temp = parseInt(document.getElementById('temp-slider').value);
+    const zoneId = document.getElementById('pred-zone').value;
+    const zone = RISK_ZONES.find(z=>z.id===zoneId);
+
+    let floodP = Math.min(95, (rainfall/3 + zone.risk*0.4 + 20));
+    let fireP = Math.min(90, (wind*0.6 + temp*0.8 + 10));
+    let landP = Math.min(85, (rainfall*0.25 + zone.risk*0.3 + 15));
+    let chemP = 10 + Math.random()*20;
+    let infraP = 15 + Math.random()*25;
+
+    const total = floodP+fireP+landP+chemP+infraP;
+    floodP = Math.round(floodP/total*100);
+    fireP = Math.round(fireP/total*100);
+    landP = Math.round(landP/total*100);
+    chemP = Math.round(chemP/total*100);
+    infraP = 100-floodP-fireP-landP-chemP;
+
+    const dominant = Math.max(floodP,fireP,landP);
+    const domType = dominant===floodP?'Flood':dominant===fireP?'Wildfire':'Landslide';
+    const severity = dominant > 50 ? 'CRITICAL' : dominant > 30 ? 'HIGH' : 'MEDIUM';
+    const sevColor = dominant > 50 ? 'var(--red)' : dominant > 30 ? 'var(--yellow)' : 'var(--accent2)';
+
+    document.getElementById('pred-output').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="text-align:left">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">PREDICTED DISASTER</div>
+          <div style="font-size:22px;font-weight:600;color:var(--text)">${domType}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">SEVERITY</div>
+          <div style="font-size:18px;font-weight:700;color:${sevColor}">${severity}</div>
+        </div>
+      </div>
+      ${[['Flood',floodP,'#3b82f6'],['Wildfire',fireP,'#f97316'],['Landslide',landP,'#f59e0b'],['Chemical',chemP,'#8b5cf6'],['Infrastructure',infraP,'#14b8a6']].map(([l,v,col])=>`
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--text2)">${l}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${col}">${v}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${v}%;background:${col}"></div></div>
+      </div>`).join('')}
+      <div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:4px">RECOMMENDED ACTION</div>
+        <div style="font-size:12px;color:var(--text2)">${domType==='Flood'?'Deploy water barriers, alert downstream communities, pre-position boats.':domType==='Wildfire'?'Activate firebreaks, deploy aerial support, initiate evacuation zone 2km radius.':'Issue geo-technical advisory, monitor with inclinometers, restrict road access.'}</div>
+      </div>`;
+    btn.textContent = '▶ RUN PREDICTION';
+    btn.disabled = false;
+  }, 1200);
+}
+
+function initTrainingChart() {
+  destroyChart('training-chart');
+  const epochs = Array.from({length:30},(_,i)=>i+1);
+  const acc = epochs.map(e=>Math.min(94.2, 50 + e*1.5 + Math.random()*3));
+  const loss = epochs.map(e=>Math.max(0.08, 1.8 - e*0.056 + Math.random()*0.05));
+  const ctx = document.getElementById('training-chart').getContext('2d');
+  chartInstances['training-chart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:epochs, datasets:[
+      { label:'Accuracy', data:acc, borderColor:'#10b981', tension:0.4, pointRadius:0, borderWidth:2, yAxisID:'y' },
+      { label:'Loss', data:loss, borderColor:'#ef4444', tension:0.4, pointRadius:0, borderWidth:2, yAxisID:'y1' },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{
+      x:{ ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(99,179,237,0.08)'} },
+      y:{ min:40, max:100, ticks:{color:'#10b981',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(99,179,237,0.08)'} },
+      y1:{ position:'right', min:0, max:2, ticks:{color:'#ef4444',font:{family:'Space Mono',size:9}}, grid:{display:false} }
+    }}
+  });
+}
+
+// ===== VISUALIZATION =====
+function renderVisualization(c) {
+  c.innerHTML = `
+    <div class="page-title">Dashboard & Visualization</div>
+    <div class="page-sub">Real-time sensor feeds, GIS analytics, and regional monitoring</div>
+
+    <div class="grid-3 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Sensor Feed</span><span class="badge badge-green">LIVE</span></div>
+        <div id="sensor-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Weather Conditions</span></div>
+        <div style="position:relative;height:160px">
+          <canvas id="weather-chart" role="img" aria-label="Real-time weather parameters across zones"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Response Efficiency</span></div>
+        <div style="position:relative;height:160px">
+          <canvas id="efficiency-chart" role="img" aria-label="Response efficiency metrics by disaster type"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Flood Water Level Monitoring</span></div>
+        <div style="position:relative;height:200px">
+          <canvas id="water-chart" role="img" aria-label="Water level readings at Dharwad flood zone over the last 12 hours"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Historical Disaster Frequency</span></div>
+        <div style="position:relative;height:200px">
+          <canvas id="historical-chart" role="img" aria-label="Historical disaster frequency by type and year"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><span class="card-title">Live Sensor Log</span><button class="btn btn-outline btn-sm" onclick="toggleLog()">⏸ Pause</button></div>
+      <div class="log-stream" id="log-stream"></div>
+    </div>`;
+  setTimeout(()=>{
+    initSensorGrid();
+    initWeatherChart();
+    initEfficiencyChart();
+    initWaterChart();
+    initHistoricalChart();
+    startLogs();
+  }, 50);
+}
+
+function initSensorGrid() {
+  const sensors = [
+    { name:'Rain Gauge', val:'142', unit:'mm/hr', col:'var(--accent2)' },
+    { name:'Wind Speed', val:'34', unit:'km/h', col:'var(--teal)' },
+    { name:'Soil Moisture', val:'87', unit:'%', col:'var(--yellow)' },
+    { name:'Water Level', val:'94', unit:'%', col:'var(--red)' },
+    { name:'Temperature', val:'29', unit:'°C', col:'var(--orange)' },
+    { name:'Air Quality', val:'68', unit:'AQI', col:'var(--green)' },
+  ];
+  document.getElementById('sensor-grid').innerHTML = sensors.map(s=>`
+    <div class="card-sm">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px">${s.name.toUpperCase()}</div>
+      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:${s.col};margin-top:4px">${s.val}<span style="font-size:10px;color:var(--text3)"> ${s.unit}</span></div>
+    </div>`).join('');
+}
+
+function initWeatherChart() {
+  destroyChart('weather-chart');
+  const ctx = document.getElementById('weather-chart').getContext('2d');
+  chartInstances['weather-chart'] = new Chart(ctx, {
+    type:'radar',
+    data:{ labels:['Rainfall','Wind','Temp','Humidity','Pressure','UV'],
+      datasets:[{ label:'Current', data:[82,65,58,78,40,55], backgroundColor:'rgba(59,130,246,0.15)', borderColor:'#3b82f6', borderWidth:2, pointRadius:3, pointBackgroundColor:'#3b82f6' }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ r:{ min:0, max:100, ticks:{display:false}, grid:{color:'rgba(99,179,237,0.15)'}, angleLines:{color:'rgba(99,179,237,0.15)'}, pointLabels:{color:'#8ba3c4',font:{family:'Space Mono',size:9}} }} }
+  });
+}
+
+function initEfficiencyChart() {
+  destroyChart('efficiency-chart');
+  const ctx = document.getElementById('efficiency-chart').getContext('2d');
+  chartInstances['efficiency-chart'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:['Flood','Fire','Landslide','Chemical','Infra'],
+      datasets:[{ data:[82,74,68,91,77], backgroundColor:['#3b82f6','#f97316','#f59e0b','#8b5cf6','#14b8a6'], borderRadius:3, borderWidth:0 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{display:false}}, y:{min:0,max:100,ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+function initWaterChart() {
+  destroyChart('water-chart');
+  const hrs = Array.from({length:12},(_,i)=>`${String(i+6).padStart(2,'0')}:00`);
+  const lvl = [65,68,72,78,82,85,87,88,90,91,93,94];
+  const ctx = document.getElementById('water-chart').getContext('2d');
+  chartInstances['water-chart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:hrs, datasets:[
+      { label:'Water Level', data:lvl, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 },
+      { label:'Critical', data:Array(12).fill(85), borderColor:'#ef4444', borderDash:[5,5], pointRadius:0, borderWidth:1 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{
+      x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}},
+      y:{min:50,max:100,ticks:{color:'#4a6080',font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'rgba(99,179,237,0.08)'}}
+    }}
+  });
+}
+
+function initHistoricalChart() {
+  destroyChart('historical-chart');
+  const ctx = document.getElementById('historical-chart').getContext('2d');
+  chartInstances['historical-chart'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:['2019','2020','2021','2022','2023','2024','2025'],
+      datasets:[
+        { label:'Flood', data:[12,18,8,22,15,19,24], backgroundColor:'rgba(59,130,246,0.7)', borderRadius:2 },
+        { label:'Fire', data:[5,7,11,6,9,12,8], backgroundColor:'rgba(249,115,22,0.7)', borderRadius:2 },
+        { label:'Landslide', data:[8,6,14,9,7,11,13], backgroundColor:'rgba(245,158,11,0.7)', borderRadius:2 },
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{stacked:true,ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{display:false}}, y:{stacked:true,ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+let logPaused = false;
+function startLogs() {
+  const stream = document.getElementById('log-stream');
+  if(!stream) return;
+  const messages = [
+    ['[SENSOR] Zone Z001 — rainfall threshold 142mm exceeded',''],
+    ['[AI] Flood probability updated: 87% → 89%','warn'],
+    ['[API] POST /predict/disaster → 200 OK (187ms)',''],
+    ['[SEC] JWT validated for user admin@cep.edu',''],
+    ['[QUANTUM] Circuit depth: 18, Qubits: 12, Fidelity: 0.94',''],
+    ['[SENSOR] Wind speed alert: 34km/h at Hassan sector 3','warn'],
+    ['[RESOURCE] Rescue Team Bravo-12 dispatched to Kodagu',''],
+    ['[AI] Model retraining scheduled in 2h',''],
+    ['[ALERT] New critical event generated: ALT_FLOOD_DWD','err'],
+    ['[API] GET /sensors/stream → 200 OK (5ms)',''],
+    ['[SEC] Rate limit: 4823 req/min within quota',''],
+    ['[QUANTUM] VQE convergence at iteration 47',''],
+    ['[SENSOR] Soil moisture: 87% (threshold: 80%)','warn'],
+    ['[RESOURCE] Optimizer: optimal allocation computed (3 teams)',''],
+    ['[API] GET /alerts/live → 200 OK (8ms)',''],
+  ];
+  let i=0;
+  logInterval = setInterval(()=>{
+    if(logPaused) return;
+    const s = document.getElementById('log-stream');
+    if(!s) { clearInterval(logInterval); return; }
+    const [msg,cls] = messages[i%messages.length];
+    const now = new Date().toLocaleTimeString('en-IN');
+    const line = document.createElement('div');
+    line.className = 'log-line' + (cls?' '+cls:'');
+    line.innerHTML = `<span>${now} ${msg}</span>`;
+    s.appendChild(line);
+    s.scrollTop = s.scrollHeight;
+    if(s.children.length > 50) s.removeChild(s.firstChild);
+    i++;
+  }, 800);
+}
+
+function stopLogs() { if(logInterval) clearInterval(logInterval); logInterval=null; logPaused=false; }
+function toggleLog() {
+  logPaused = !logPaused;
+  const btn = document.querySelector('[onclick="toggleLog()"]');
+  if(btn) btn.textContent = logPaused ? '▶ Resume' : '⏸ Pause';
+}
+
+// ===== API =====
+function renderAPI(c) {
+  c.innerHTML = `
+    <div class="page-title">Backend APIs</div>
+    <div class="page-sub">Flask/FastAPI REST endpoints — real-time status and documentation</div>
+
+    <div class="grid-4 section-gap">
+      <div class="metric"><div class="metric-label">Total Endpoints</div><div class="metric-value" style="color:var(--accent2)">${API_ENDPOINTS.length}</div></div>
+      <div class="metric"><div class="metric-label">Uptime</div><div class="metric-value" style="color:var(--green)">99.7%</div></div>
+      <div class="metric"><div class="metric-label">Avg Latency</div><div class="metric-value" style="color:var(--yellow)">45ms</div></div>
+      <div class="metric"><div class="metric-label">Req/min</div><div class="metric-value" style="color:var(--purple)">4,823</div></div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">API Request Volume</span></div>
+        <div style="position:relative;height:180px">
+          <canvas id="api-vol-chart" role="img" aria-label="API request volume per endpoint over the last hour"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Latency Distribution</span></div>
+        <div style="position:relative;height:180px">
+          <canvas id="api-lat-chart" role="img" aria-label="Response latency distribution for API endpoints"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header">
+        <span class="card-title">Endpoint Registry</span>
+        <button class="btn btn-outline btn-sm" onclick="testEndpoint()">▶ Test All Endpoints</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Status</th><th>Latency</th><th>Calls (24h)</th><th>Health</th></tr></thead>
+        <tbody id="endpoint-table">
+          ${API_ENDPOINTS.map(e=>`<tr>
+            <td>${methodBadge(e.method)}</td>
+            <td><code style="font-family:var(--mono);font-size:11px;color:var(--text2)">${e.path}</code></td>
+            <td><span style="font-family:var(--mono);font-size:12px;color:${e.status===200?'var(--green)':'var(--red)'}">${e.status}</span></td>
+            <td><span style="font-family:var(--mono);font-size:12px;color:${e.latency<50?'var(--green)':e.latency<150?'var(--yellow)':'var(--red)'}">${e.latency}ms</span></td>
+            <td style="font-family:var(--mono);font-size:12px">${e.calls.toLocaleString()}</td>
+            <td><span class="badge ${e.status===200?'badge-green':'badge-red'}">${e.status===200?'UP':'DOWN'}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><span class="card-title">Sample API Request — Risk Prediction</span></div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchApiTab('request',this)">Request</div>
+        <div class="tab" onclick="switchApiTab('response',this)">Response</div>
+        <div class="tab" onclick="switchApiTab('schema',this)">Schema</div>
+      </div>
+      <div id="api-tab-content">
+        <div class="code-block">POST /api/v1/predict/disaster HTTP/1.1
+Host: sadris.cep.edu.in
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Content-Type: application/json
+
+{
+  "zone_id": "Z001",
+  "sensor_data": {
+    "rainfall_mm": 142,
+    "wind_speed_kmh": 34,
+    "temperature_c": 29,
+    "soil_moisture_pct": 87,
+    "water_level_pct": 94
+  },
+  "timestamp": "2026-06-04T10:23:45Z"
+}</div>
+      </div>
+    </div>`;
+  setTimeout(()=>{
+    initAPIVolChart();
+    initAPILatChart();
+  }, 50);
+}
+
+function switchApiTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const content = {
+    request:`<div class="code-block">POST /api/v1/predict/disaster HTTP/1.1\nHost: sadris.cep.edu.in\nAuthorization: Bearer eyJhbGciOiJIUzI1NiJ9...\nContent-Type: application/json\n\n{\n  "zone_id": "Z001",\n  "sensor_data": {\n    "rainfall_mm": 142,\n    "wind_speed_kmh": 34,\n    "temperature_c": 29\n  }\n}</div>`,
+    response:`<div class="code-block">HTTP/1.1 200 OK\nContent-Type: application/json\nX-Response-Time: 187ms\n\n{\n  "zone_id": "Z001",\n  "predicted_type": "Flood",\n  "risk_score": 87.4,\n  "severity": "CRITICAL",\n  "probabilities": {\n    "flood": 0.64,\n    "wildfire": 0.12,\n    "landslide": 0.18\n  },\n  "recommended_action": "deploy_water_barriers",\n  "confidence": 0.931\n}</div>`,
+    schema:`<div class="code-block">PredictionRequest:\n  zone_id: string (required)\n  sensor_data:\n    rainfall_mm: float [0-500]\n    wind_speed_kmh: float [0-200]\n    temperature_c: float [-10 to 60]\n    soil_moisture_pct: float [0-100]\n    water_level_pct: float [0-100]\n  timestamp: datetime (ISO 8601)\n\nPredictionResponse:\n  predicted_type: enum [Flood|Fire|Landslide|Chemical|Infrastructure]\n  risk_score: float [0-100]\n  severity: enum [LOW|MEDIUM|HIGH|CRITICAL]\n  confidence: float [0-1]</div>`
+  };
+  document.getElementById('api-tab-content').innerHTML = content[tab];
+}
+
+function testEndpoint() {
+  const table = document.getElementById('endpoint-table');
+  if(!table) return;
+  const rows = table.querySelectorAll('tr');
+  rows.forEach((row,i)=>{
+    setTimeout(()=>{
+      const statusCell = row.cells[2];
+      const healthCell = row.cells[5];
+      if(statusCell && healthCell) {
+        statusCell.innerHTML = '<span style="font-family:var(--mono);font-size:12px;color:var(--yellow)">...</span>';
+        setTimeout(()=>{
+          const ep = API_ENDPOINTS[i];
+          statusCell.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:${ep.status===200?'var(--green)':'var(--red)'}">${ep.status}</span>`;
+          healthCell.innerHTML = `<span class="badge ${ep.status===200?'badge-green':'badge-red'}">${ep.status===200?'UP':'DOWN'}</span>`;
+        }, 400);
+      }
+    }, i*150);
+  });
+}
+
+function initAPIVolChart() {
+  destroyChart('api-vol-chart');
+  const ctx = document.getElementById('api-vol-chart').getContext('2d');
+  const paths = API_ENDPOINTS.map(e=>e.path.split('/').pop().replace(':id','')).map(p=>p.length>12?p.substr(0,12)+'..':p);
+  chartInstances['api-vol-chart'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:paths, datasets:[{ data:API_ENDPOINTS.map(e=>e.calls), backgroundColor:['#3b82f6','#10b981','#f59e0b','#8b5cf6','#14b8a6','#ef4444','#f97316'], borderRadius:3, borderWidth:0 }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}}, y:{ticks:{color:'#8ba3c4',font:{family:'Space Mono',size:9}},grid:{display:false}} }}
+  });
+}
+
+function initAPILatChart() {
+  destroyChart('api-lat-chart');
+  const ctx = document.getElementById('api-lat-chart').getContext('2d');
+  chartInstances['api-lat-chart'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:['<10ms','10-50ms','50-100ms','100-200ms','>200ms'],
+      datasets:[{ data:[45,30,12,8,5], backgroundColor:'#3b82f6', borderRadius:3 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{display:false}}, y:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+// ===== SECURITY =====
+function renderSecurity(c) {
+  c.innerHTML = `
+    <div class="page-title">Secure API Layer</div>
+    <div class="page-sub">JWT/OAuth2 authentication, encryption, and security audit monitoring</div>
+
+    <div class="grid-4 section-gap">
+      <div class="metric"><div class="metric-label">Auth Requests</div><div class="metric-value" style="color:var(--green)">8,421</div><div class="metric-sub delta-down">All valid today</div></div>
+      <div class="metric"><div class="metric-label">Blocked Requests</div><div class="metric-value" style="color:var(--red)">47</div><div class="metric-sub delta-up">↑ 12 in last hour</div></div>
+      <div class="metric"><div class="metric-label">Active Sessions</div><div class="metric-value" style="color:var(--accent2)">23</div></div>
+      <div class="metric"><div class="metric-label">Encryption</div><div class="metric-value" style="color:var(--teal);font-size:16px">AES-256</div><div class="metric-sub">RSA-4096 key exchange</div></div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">JWT Token Flow</span></div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          ${[
+            ['Client','Sends credentials (user/pass)','→','Auth Server','#3b82f6'],
+            ['Auth Server','Validates, signs JWT (HS256)','→','Token Store','#10b981'],
+            ['Client','Attaches Bearer token','→','API Gateway','#f59e0b'],
+            ['API Gateway','Verifies signature + expiry','→','Backend Service','#8b5cf6'],
+            ['Backend','Returns protected resource','→','Client','#14b8a6'],
+          ].map(([from,action,arrow,to,col],i)=>`
+            <div style="display:flex;align-items:center;padding:10px 0;border-bottom:${i<4?'1px solid var(--border)':'none'}">
+              <div style="width:100px;font-family:var(--mono);font-size:10px;color:${col}">${from}</div>
+              <div style="flex:1;font-size:12px;color:var(--text3);text-align:center">${action}</div>
+              <div style="color:var(--text3);padding:0 8px">${arrow}</div>
+              <div style="width:120px;font-family:var(--mono);font-size:10px;color:var(--text2);text-align:right">${to}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Security Events</span></div>
+        <div style="position:relative;height:200px">
+          <canvas id="sec-chart" role="img" aria-label="Security events over the last 24 hours showing blocked and allowed requests"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Live Token Validator</span></div>
+        <div style="margin-bottom:12px;font-family:var(--mono);font-size:11px;color:var(--text3)">ENTER JWT TOKEN</div>
+        <input id="jwt-input" style="width:100%;margin-bottom:10px" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        <button class="btn btn-primary" onclick="validateJWT()" style="width:100%">VALIDATE TOKEN</button>
+        <div id="jwt-result" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Audit Log</span></div>
+        <table class="data-table" style="font-size:11px">
+          <thead><tr><th>Time</th><th>Event</th><th>User</th><th>Status</th></tr></thead>
+          <tbody>
+            ${[
+              ['10:23:45','Login','admin@cep.edu','SUCCESS'],
+              ['10:21:12','Token Refresh','sensor-bot-01','SUCCESS'],
+              ['10:18:33','API Access Denied','unknown','BLOCKED'],
+              ['10:15:07','Rate Limit Hit','192.168.1.44','BLOCKED'],
+              ['10:12:55','Permission Escalation','researcher@cep','SUCCESS'],
+            ].map(([t,e,u,s])=>`<tr>
+              <td style="font-family:var(--mono);font-size:10px">${t}</td>
+              <td>${e}</td>
+              <td style="color:var(--text3)">${u}</td>
+              <td><span class="badge ${s==='SUCCESS'?'badge-green':'badge-red'}">${s}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  setTimeout(initSecChart, 50);
+}
+
+function validateJWT() {
+  const input = document.getElementById('jwt-input').value.trim();
+  const result = document.getElementById('jwt-result');
+  if(!input) { result.innerHTML='<div style="color:var(--red);font-size:12px;font-family:var(--mono)">✗ Empty token</div>'; return; }
+  const parts = input.split('.');
+  if(parts.length===3) {
+    try {
+      const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+      result.innerHTML=`<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:4px;padding:10px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:8px">✓ VALID JWT STRUCTURE</div>
+        <div class="code-block" style="font-size:10px">${JSON.stringify(payload,null,2)}</div>
+      </div>`;
+    } catch(e) {
+      result.innerHTML=`<div style="color:var(--red);font-size:12px;font-family:var(--mono)">✗ Valid structure but payload decode failed</div>`;
+    }
+  } else {
+    result.innerHTML=`<div style="color:var(--red);font-size:12px;font-family:var(--mono)">✗ Invalid JWT format (expected 3 parts, got ${parts.length})</div>`;
+  }
+}
+
+function initSecChart() {
+  destroyChart('sec-chart');
+  const hrs = Array.from({length:12},(_,i)=>`${String(i+0).padStart(2,'0')}:00`);
+  const ctx = document.getElementById('sec-chart').getContext('2d');
+  chartInstances['sec-chart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:hrs, datasets:[
+      { label:'Allowed', data:[320,340,290,410,380,450,420,480,460,500,520,490], borderColor:'#10b981', fill:false, tension:0.4, pointRadius:2, borderWidth:2 },
+      { label:'Blocked', data:[3,5,2,8,4,6,7,5,9,12,8,6], borderColor:'#ef4444', fill:false, tension:0.4, pointRadius:2, borderWidth:2 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}}, y:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+// ===== RESOURCES =====
+function renderResources(c) {
+  c.innerHTML = `
+    <div class="page-title">Resource Allocation Optimizer</div>
+    <div class="page-sub">LP/AI-based optimal deployment of emergency units and relief resources</div>
+
+    <div class="grid-4 section-gap">
+      <div class="metric"><div class="metric-label">Deployed Units</div><div class="metric-value" style="color:var(--red)">${RESOURCES.filter(r=>r.status==='deployed').length}</div></div>
+      <div class="metric"><div class="metric-label">On Standby</div><div class="metric-value" style="color:var(--yellow)">${RESOURCES.filter(r=>r.status==='standby').length}</div></div>
+      <div class="metric"><div class="metric-label">Ready</div><div class="metric-value" style="color:var(--green)">${RESOURCES.filter(r=>r.status==='ready').length}</div></div>
+      <div class="metric"><div class="metric-label">Returning</div><div class="metric-value" style="color:var(--accent2)">${RESOURCES.filter(r=>r.status==='returning').length}</div></div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Optimization Engine</span></div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Select optimization objective:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${['Min Response Time','Max Coverage','Min Cost','Balanced'].map((o,i)=>`
+              <button class="btn btn-outline btn-sm" id="obj-${i}" onclick="selectObj(${i},'${o}')" style="${i===0?'border-color:var(--accent);color:var(--accent2)':''}">${o}</button>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:6px">ACTIVE INCIDENTS: <span style="color:var(--red)">3</span></div>
+          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:6px">AVAILABLE UNITS: <span style="color:var(--green)">${RESOURCES.filter(r=>r.status!=='deployed').length}</span></div>
+          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:6px">CONSTRAINTS: Distance, Crew size, Vehicle type</div>
+        </div>
+        <button class="btn btn-primary" onclick="runOptimizer()" id="opt-btn" style="width:100%">⚙ RUN OPTIMIZER</button>
+        <div id="opt-result" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Resource Utilization</span></div>
+        <div style="position:relative;height:220px">
+          <canvas id="res-chart" role="img" aria-label="Resource utilization by type showing deployed versus available units"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header">
+        <span class="card-title">Resource Registry</span>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Unit ID</th><th>Type</th><th>Unit Name</th><th>Location</th><th>Status</th><th>ETA</th><th>Crew</th></tr></thead>
+        <tbody>
+          ${RESOURCES.map(r=>`<tr>
+            <td><span style="font-family:var(--mono);color:var(--accent2)">${r.id}</span></td>
+            <td>${r.type}</td>
+            <td>${r.unit}</td>
+            <td>${r.location}</td>
+            <td>${statusBadge(r.status)}</td>
+            <td style="font-family:var(--mono);font-size:12px">${r.eta}</td>
+            <td><span style="font-family:var(--mono);color:var(--text2)">${r.crew}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(initResChart, 50);
+}
+
+let selectedObj = 0;
+function selectObj(i,name) {
+  selectedObj = i;
+  for(let j=0;j<4;j++) {
+    const btn = document.getElementById('obj-'+j);
+    if(btn) btn.style.cssText = j===i ? 'border-color:var(--accent);color:var(--accent2)' : '';
+  }
+}
+
+function runOptimizer() {
+  const btn = document.getElementById('opt-btn');
+  btn.textContent = '⟳ Computing...';
+  btn.disabled = true;
+  setTimeout(()=>{
+    const plan = [
+      { unit:'Team Bravo-12', incident:'Kodagu Landslide', priority:1, dist:'22km', time:'22min' },
+      { unit:'Engine Delta-3', incident:'Hassan Wildfire', priority:1, dist:'18km', time:'28min' },
+      { unit:'Heli Sierra-2', incident:'Dharwad Flood', priority:2, dist:'85km', time:'35min' },
+    ];
+    document.getElementById('opt-result').innerHTML = `
+      <div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:4px;padding:12px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:10px">✓ OPTIMAL PLAN COMPUTED (LP solver: 0.31s)</div>
+        ${plan.map(p=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+          <span class="badge badge-blue">P${p.priority}</span>
+          <span style="color:var(--accent2);font-family:var(--mono)">${p.unit}</span>
+          <span style="color:var(--text3)">→</span>
+          <span style="color:var(--text2)">${p.incident}</span>
+          <span style="margin-left:auto;color:var(--text3)">${p.dist} / ${p.time}</span>
+        </div>`).join('')}
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;border-top:1px solid var(--border);padding-top:8px">Objective: ${['Min Response Time','Max Coverage','Min Cost','Balanced'][selectedObj]} | Score: 91.4</div>
+      </div>`;
+    btn.textContent = '⚙ RUN OPTIMIZER';
+    btn.disabled = false;
+  }, 1500);
+}
+
+function initResChart() {
+  destroyChart('res-chart');
+  const ctx = document.getElementById('res-chart').getContext('2d');
+  chartInstances['res-chart'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:['Ambulance','Fire Engine','Rescue Team','Medical Van','Helicopter'],
+      datasets:[
+        { label:'Deployed', data:[1,0,1,1,0], backgroundColor:'rgba(239,68,68,0.7)', borderRadius:3 },
+        { label:'Available', data:[0,1,1,0,1], backgroundColor:'rgba(16,185,129,0.7)', borderRadius:3 },
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{stacked:true,ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{display:false}}, y:{stacked:true,ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+// ===== QUANTUM =====
+function renderQuantum(c) {
+  c.innerHTML = `
+    <div class="page-title">Quantum-AI Algorithms</div>
+    <div class="page-sub">Hybrid Quantum-Classical models — Qiskit VQE/QAOA for enhanced prediction & optimization</div>
+
+    <div class="grid-4 section-gap">
+      <div class="metric"><div class="metric-label">Qubits</div><div class="metric-value" style="color:var(--purple)">12</div></div>
+      <div class="metric"><div class="metric-label">Circuit Depth</div><div class="metric-value" style="color:var(--teal)">18</div></div>
+      <div class="metric"><div class="metric-label">Fidelity</div><div class="metric-value" style="color:var(--green)">0.94</div></div>
+      <div class="metric"><div class="metric-label">Speedup vs Classical</div><div class="metric-value" style="color:var(--yellow)">3.2×</div></div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Quantum Circuit Visualizer</span></div>
+        <canvas id="quantum-canvas" class="quantum-canvas" width="500" height="200" style="width:100%"></canvas>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="drawQuantumCircuit('vqe')">VQE Circuit</button>
+          <button class="btn btn-outline btn-sm" onclick="drawQuantumCircuit('qaoa')">QAOA Circuit</button>
+          <button class="btn btn-outline btn-sm" onclick="drawQuantumCircuit('qnn')">Quantum NN</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">VQE Energy Convergence</span></div>
+        <div style="position:relative;height:200px">
+          <canvas id="vqe-chart" role="img" aria-label="VQE energy convergence over optimization iterations"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Quantum vs Classical Benchmark</span></div>
+        <div style="position:relative;height:200px">
+          <canvas id="bench-chart" role="img" aria-label="Benchmark comparison of quantum versus classical approaches on various problem sizes"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">QAOA Resource Optimizer</span></div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:6px">QAOA LAYERS (p)</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="range" min="1" max="10" value="3" id="qaoa-p" step="1" oninput="updateQAOA(this.value)">
+            <span id="qaoa-p-val" style="font-family:var(--mono);font-size:13px;color:var(--purple);min-width:20px">3</span>
+          </div>
+        </div>
+        <div id="qaoa-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        <button class="btn btn-primary btn-sm" style="width:100%;margin-top:12px" onclick="runQAOA()">▶ Run QAOA Simulation</button>
+        <div id="qaoa-result" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><span class="card-title">Algorithm Comparison</span></div>
+      <table class="data-table">
+        <thead><tr><th>Algorithm</th><th>Use Case</th><th>Complexity</th><th>Qubits</th><th>Accuracy</th><th>Status</th></tr></thead>
+        <tbody>
+          ${[
+            ['VQE','Risk level optimization','O(n²)','8','91.2%','Active'],
+            ['QAOA','Resource allocation','O(p·n)','12','88.7%','Active'],
+            ['QNN','Disaster classification','O(L·n)','10','85.4%','Testing'],
+            ['Grover Search','Alert prioritization','O(√N)','6','99.1%','Active'],
+            ['QSVM','Anomaly detection','O(log n)','8','93.6%','Dev'],
+          ].map(([a,u,c,q,acc,s])=>`<tr>
+            <td><span style="font-family:var(--mono);color:var(--purple)">${a}</span></td>
+            <td>${u}</td>
+            <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${c}</span></td>
+            <td style="font-family:var(--mono)">${q}</td>
+            <td style="color:var(--green);font-family:var(--mono)">${acc}</td>
+            <td><span class="badge ${s==='Active'?'badge-green':s==='Testing'?'badge-yellow':'badge-purple'}">${s.toUpperCase()}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    drawQuantumCircuit('vqe');
+    initVQEChart();
+    initBenchChart();
+    updateQAOA(3);
+  }, 50);
+}
+
+function drawQuantumCircuit(type) {
+  const canvas = document.getElementById('quantum-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w=canvas.width, h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#151e35';
+  ctx.fillRect(0,0,w,h);
+
+  const qubits = type==='vqe'?4:type==='qaoa'?5:3;
+  const qh = h/(qubits+1);
+  const gates = type==='vqe'?
+    [{q:0,x:80,t:'H'},{q:1,x:80,t:'H'},{q:2,x:80,t:'H'},{q:3,x:80,t:'H'},
+     {q:0,x:150,t:'Ry'},{q:1,x:150,t:'Rz'},{q:2,x:150,t:'Ry'},{q:3,x:150,t:'Rx'},
+     {cx:0,cy:1,x:220},{cx:1,cy:2,x:290},{cx:2,cy:3,x:360},
+     {q:0,x:430,t:'Ry'},{q:1,x:430,t:'Rz'},{q:2,x:430,t:'Rx'}]:
+    type==='qaoa'?
+    [{q:0,x:80,t:'H'},{q:1,x:80,t:'H'},{q:2,x:80,t:'H'},{q:3,x:80,t:'H'},{q:4,x:80,t:'H'},
+     {cx:0,cy:1,x:150},{cx:2,cy:3,x:150},{cx:1,cy:2,x:220},{cx:3,cy:4,x:220},
+     {q:0,x:290,t:'Rz'},{q:1,x:290,t:'Rx'},{q:2,x:290,t:'Rz'},{q:3,x:290,t:'Rx'},{q:4,x:290,t:'Rz'},
+     {cx:0,cy:2,x:360},{cx:1,cy:3,x:360},{q:0,x:430,t:'M'},{q:1,x:430,t:'M'}]:
+    [{q:0,x:80,t:'H'},{q:1,x:80,t:'H'},{q:2,x:80,t:'H'},
+     {q:0,x:150,t:'Rz'},{q:1,x:150,t:'Ry'},{cx:0,cy:1,x:220},
+     {q:0,x:290,t:'Rx'},{q:2,x:290,t:'Rz'},{cx:1,cy:2,x:360},{q:0,x:430,t:'M'}];
+
+  // Draw qubit lines
+  for(let q=0;q<qubits;q++) {
+    const y = (q+1)*qh;
+    ctx.strokeStyle='rgba(99,179,237,0.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(40,y);
+    ctx.lineTo(w-20,y);
+    ctx.stroke();
+    ctx.fillStyle='#60a5fa';
+    ctx.font='bold 11px Space Mono';
+    ctx.fillText('q'+q,8,y+4);
+  }
+
+  // Draw gates
+  gates.forEach(g=>{
+    if(g.t!==undefined) {
+      const y=(g.q+1)*qh;
+      const gateColors={H:'#3b82f6',Ry:'#8b5cf6',Rz:'#14b8a6',Rx:'#f59e0b',M:'#10b981'};
+      const col=gateColors[g.t]||'#4a6080';
+      ctx.fillStyle=col+'33';
+      ctx.strokeStyle=col;
+      ctx.lineWidth=1.5;
+      roundRect(ctx,g.x-16,y-13,32,26,4);
+      ctx.fillStyle=col;
+      ctx.font='bold 10px Space Mono';
+      ctx.textAlign='center';
+      ctx.fillText(g.t,g.x,y+4);
+    } else if(g.cx!==undefined) {
+      const y1=(g.cx+1)*qh, y2=(g.cy+1)*qh;
+      ctx.strokeStyle='rgba(99,179,237,0.7)';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(g.x,y1);
+      ctx.lineTo(g.x,y2);
+      ctx.stroke();
+      ctx.fillStyle='#60a5fa';
+      ctx.beginPath();
+      ctx.arc(g.x,y1,5,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='#60a5fa';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.arc(g.x,y2,8,0,Math.PI*2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(g.x-8,y2);
+      ctx.lineTo(g.x+8,y2);
+      ctx.moveTo(g.x,y2-8);
+      ctx.lineTo(g.x,y2+8);
+      ctx.stroke();
+    }
+  });
+
+  ctx.fillStyle='rgba(99,179,237,0.5)';
+  ctx.font='10px Space Mono';
+  ctx.textAlign='left';
+  ctx.fillText(type.toUpperCase()+' Circuit — Depth: '+(type==='vqe'?18:type==='qaoa'?22:15)+' | Qubits: '+qubits, 40, h-8);
+}
+
+function roundRect(ctx,x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);
+  ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function initVQEChart() {
+  destroyChart('vqe-chart');
+  const iters = Array.from({length:50},(_,i)=>i+1);
+  const energy = iters.map(i=>-0.8-Math.min(1.4,(0.8+i*0.035))+Math.random()*0.08*(50-i)/50);
+  const ctx = document.getElementById('vqe-chart').getContext('2d');
+  chartInstances['vqe-chart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:iters, datasets:[
+      { label:'VQE Energy', data:energy, borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.05)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9},maxTicksLimit:8},grid:{color:'rgba(99,179,237,0.08)'}},
+        y:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+function initBenchChart() {
+  destroyChart('bench-chart');
+  const sizes = ['n=10','n=50','n=100','n=500','n=1000'];
+  const ctx = document.getElementById('bench-chart').getContext('2d');
+  chartInstances['bench-chart'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:sizes, datasets:[
+      { label:'Classical', data:[1,12,48,600,2400], borderColor:'#4a6080', tension:0.4, pointRadius:3, borderWidth:2 },
+      { label:'Quantum', data:[1.2,5,11,85,340], borderColor:'#8b5cf6', tension:0.4, pointRadius:3, borderWidth:2 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9}},grid:{color:'rgba(99,179,237,0.08)'}},
+        y:{ticks:{color:'#4a6080',font:{family:'Space Mono',size:9},callback:v=>v+'ms'},grid:{color:'rgba(99,179,237,0.08)'}} }}
+  });
+}
+
+function updateQAOA(p) {
+  p=parseInt(p);
+  document.getElementById('qaoa-p-val').textContent=p;
+  const fidelity = Math.min(0.99, 0.70+p*0.03).toFixed(3);
+  const depth = 6+p*4;
+  const gates = 12+p*8;
+  const time = (0.5+p*0.4).toFixed(1);
+  document.getElementById('qaoa-stats').innerHTML = [
+    ['Circuit Depth',depth,'var(--teal)'],['Total Gates',gates,'var(--purple)'],
+    ['Est. Fidelity',fidelity,'var(--green)'],['Exec Time',time+'s','var(--yellow)']
+  ].map(([l,v,c])=>`<div class="card-sm"><div style="font-family:var(--mono);font-size:9px;color:var(--text3)">${l.toUpperCase()}</div><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${c};margin-top:4px">${v}</div></div>`).join('');
+}
+
+function runQAOA() {
+  const p=parseInt(document.getElementById('qaoa-p').value);
+  const result=document.getElementById('qaoa-result');
+  result.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">⟳ Simulating QAOA circuit...</div>';
+  setTimeout(()=>{
+    const score=(75+p*3+Math.random()*5).toFixed(1);
+    result.innerHTML=`<div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.3);border-radius:4px;padding:10px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--purple);margin-bottom:6px">✓ QAOA COMPLETE (p=${p})</div>
+      <div style="font-size:12px;color:var(--text2)">Optimal allocation score: <span style="color:var(--green);font-family:var(--mono)">${score}%</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Max-Cut approximation ratio: ${(0.75+p*0.025).toFixed(3)}</div>
+    </div>`;
+  }, 1800);
+}
+
+// ==================== INIT ====================
+updateAlertBadge();
+renderPage('dashboard');
+
+// Simulate live risk updates
+setInterval(()=>{
+  RISK_ZONES.forEach(z=>{
+    z.risk = Math.max(10, Math.min(99, z.risk + (Math.random()-0.45)*3));
+  });
+}, 5000);
+</script>
+</body>
+</html>
